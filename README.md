@@ -1,6 +1,6 @@
-# Cybersecurity Honeypot
+# Cybersecurity HoneyTrap
 
-A simple cybersecurity honeypot project built with Flask and PostgreSQL.
+A simple cybersecurity honeytrap project built with Flask and PostgreSQL.
 
 ## Project Overview
 
