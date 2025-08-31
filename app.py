@@ -2,16 +2,22 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-# Configure PostgreSQL database
-# IMPORTANT: Replace 'your_user', 'your_password', 'localhost', and 'honeypot_db'
-# with your actual PostgreSQL server details.
-# If your PostgreSQL is running on your local machine, 'localhost' is usually correct,
-# but ensure the port (default 5432) is open and the user/password are correct.
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://project_honeypot:4CB22CG001@localhost:5432/honeypot_db'
+# Configure PostgreSQL database using .env values
+db_user = os.getenv("DB_USER")
+db_password = os.getenv("DB_PASSWORD")
+db_host = os.getenv("DB_HOST")
+db_port = os.getenv("DB_PORT")
+db_name = os.getenv("DB_NAME")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -30,7 +36,7 @@ with app.app_context():
         print("Database tables created or already exist.")
     except Exception as e:
         print(f"Error connecting to or creating database tables: {e}")
-        print("Please ensure your PostgreSQL server is running and the connection string in app.py is correct.")
+        print("Please ensure your PostgreSQL server is running and the connection string is correct.")
 
 # Route for the login page
 @app.route('/', methods=['GET', 'POST'])
@@ -41,11 +47,10 @@ def login():
         ip_address = request.remote_addr
 
         try:
-            # Save the login attempt to the database
             login_attempt = LoginAttempt(username=username, password=password, ip_address=ip_address)
             db.session.add(login_attempt)
             db.session.commit()
-            flash('Invalid username or password', 'error') # Always reject login
+            flash('Invalid username or password', 'error')
         except Exception as e:
             db.session.rollback()
             flash(f'Error saving login attempt: {e}', 'error')
@@ -55,12 +60,12 @@ def login():
 
     return render_template('login.html')
 
-# Route for the logs page (protected with a simple hardcoded admin password)
+# Route for the logs page
 @app.route('/logs', methods=['GET', 'POST'])
 def logs():
     if request.method == 'POST':
         admin_password = request.form['admin_password']
-        if admin_password == 'admin123':  # Hardcoded admin password for demonstration purposes
+        if admin_password == 'admin123':
             try:
                 login_attempts = LoginAttempt.query.all()
                 return render_template('logs.html', login_attempts=login_attempts)
@@ -76,3 +81,6 @@ def logs():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+# to run on localhost: http://127.0.0.1:5000
